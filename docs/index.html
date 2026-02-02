@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Daily Stock Sentiment Ranker</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="page">
+      <header class="header">
+        <div>
+          <h1>Daily Stock Sentiment Ranker</h1>
+          <p class="sub">Reddit + Stocktwits attention signals. Not investment advice.</p>
+        </div>
+        <div class="meta">
+          <span id="last-updated">Updated: --</span>
+        </div>
+      </header>
+
+      <section class="controls">
+        <label>
+          Filter mode
+          <select id="filter-mode">
+            <option value="balanced">Balanced</option>
+            <option value="strict">Strict</option>
+          </select>
+        </label>
+        <label>
+          Label
+          <select id="label-filter">
+            <option value="">All</option>
+            <option value="TRADE">TRADE</option>
+            <option value="WATCH">WATCH</option>
+            <option value="IGNORE">IGNORE</option>
+          </select>
+        </label>
+        <label>
+          Search ticker
+          <input id="search" type="text" placeholder="AAPL" />
+        </label>
+        <button id="refresh">Update</button>
+      </section>
+
+      <section class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Ticker</th>
+              <th>Label</th>
+              <th>Risk</th>
+              <th>Momentum</th>
+              <th>Conviction</th>
+              <th>Mentions</th>
+              <th>Authors</th>
+              <th>Engagement</th>
+            </tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </section>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
