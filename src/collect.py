@@ -6,6 +6,7 @@ import requests
 from .config import (
     LOOKBACK_HOURS,
     PUSHSHIFT_BASE_URL,
+    REDDIT_BASE_URL,
     STOCKTWITS_BASE_URL,
     SUBREDDITS,
     PUSHSHIFT_SIZE,
@@ -13,13 +14,18 @@ from .config import (
     STOCKTWITS_STREAM_LIMIT,
 )
 
-USER_AGENT = "reddit-stock-ranker/1.0"
+USER_AGENT = "reddit-stock-ranker/1.0 (github.com/koenvank/Daily-Stock-Ranker-2)"
 
 
 def _request_json(url, params=None):
-    resp = requests.get(url, params=params, headers={"User-Agent": USER_AGENT}, timeout=20)
-    resp.raise_for_status()
-    return resp.json()
+    try:
+        resp = requests.get(url, params=params, headers={"User-Agent": USER_AGENT}, timeout=20)
+        resp.raise_for_status()
+        return resp.json()
+    except requests.RequestException as exc:
+        status = getattr(getattr(exc, "response", None), "status_code", "unknown")
+        print(f"Request failed ({status}) for {url}")
+        return None
 
 
 def _normalize_pushshift_item(item, item_type):
@@ -53,10 +59,51 @@ def collect_pushshift_items():
             }
             try:
                 data = _request_json(url, params=params)
+                if not data:
+                    continue
                 for raw in data.get("data", []):
                     items.append(_normalize_pushshift_item(raw, item_type))
             except requests.RequestException:
                 continue
+            time.sleep(1.0)
+
+    return items
+
+
+def _normalize_reddit_item(item, item_type):
+    return {
+        "source": "reddit",
+        "subreddit": item.get("subreddit"),
+        "type": item_type,
+        "id": str(item.get("id")),
+        "created_utc": int(item.get("created_utc", 0)),
+        "author": item.get("author") or "",
+        "text": (item.get("title") or "") + "\n" + (item.get("selftext") or item.get("body") or ""),
+        "upvotes": int(item.get("score", 0)),
+        "num_comments": int(item.get("num_comments", 0)),
+        "permalink": f"https://www.reddit.com{item.get('permalink') or ''}",
+    }
+
+
+def collect_reddit_items():
+    items = []
+    after = int(datetime.now(tz=timezone.utc).timestamp() - LOOKBACK_HOURS * 3600)
+
+    for subreddit in SUBREDDITS:
+        listings = [
+            ("submission", f"{REDDIT_BASE_URL}/r/{subreddit}/new.json"),
+            ("comment", f"{REDDIT_BASE_URL}/r/{subreddit}/comments.json"),
+        ]
+        for item_type, url in listings:
+            params = {"limit": 100}
+            data = _request_json(url, params=params)
+            if not data:
+                continue
+            for child in data.get("data", {}).get("children", []):
+                raw = child.get("data", {})
+                if int(raw.get("created_utc", 0)) < after:
+                    continue
+                items.append(_normalize_reddit_item(raw, item_type))
             time.sleep(1.0)
 
     return items
@@ -125,7 +172,7 @@ def collect_stocktwits_items():
 def collect_items():
     items = []
     symbol_meta = {}
-    items.extend(collect_pushshift_items())
+    items.extend(collect_reddit_items())
     stocktwits_items, stocktwits_meta = collect_stocktwits_items()
     items.extend(stocktwits_items)
     symbol_meta.update(stocktwits_meta)

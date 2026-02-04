@@ -5,6 +5,7 @@ LOOKBACK_HOURS = int(os.getenv("LOOKBACK_HOURS", "24"))
 
 # Base URLs
 PUSHSHIFT_BASE_URL = os.getenv("PUSHSHIFT_BASE_URL", "https://api.pushshift.io/reddit/search")
+REDDIT_BASE_URL = os.getenv("REDDIT_BASE_URL", "https://www.reddit.com")
 STOCKTWITS_BASE_URL = os.getenv("STOCKTWITS_BASE_URL", "https://api.stocktwits.com/api/2")
 
 # Subreddits to scan
@@ -18,6 +19,7 @@ SUBREDDITS = [
 
 # Weighting factors
 SOURCE_WEIGHTS = {
+    "reddit": 1.0,
     "pushshift": 1.0,
     "stocktwits": 0.8,
 }
