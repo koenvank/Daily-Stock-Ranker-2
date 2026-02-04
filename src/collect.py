@@ -14,12 +14,16 @@ from .config import (
     STOCKTWITS_STREAM_LIMIT,
 )
 
-USER_AGENT = "reddit-stock-ranker/1.0 (github.com/koenvank/Daily-Stock-Ranker-2)"
+USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"
 
 
 def _request_json(url, params=None):
     try:
-        resp = requests.get(url, params=params, headers={"User-Agent": USER_AGENT}, timeout=20)
+        headers = {
+            "User-Agent": USER_AGENT,
+            "Accept": "application/json",
+        }
+        resp = requests.get(url, params=params, headers=headers, timeout=20)
         resp.raise_for_status()
         return resp.json()
     except requests.RequestException as exc:
@@ -95,7 +99,7 @@ def collect_reddit_items():
             ("comment", f"{REDDIT_BASE_URL}/r/{subreddit}/comments.json"),
         ]
         for item_type, url in listings:
-            params = {"limit": 100}
+            params = {"limit": 100, "raw_json": 1}
             data = _request_json(url, params=params)
             if not data:
                 continue
@@ -138,6 +142,8 @@ def collect_stocktwits_items():
     trending_url = f"{STOCKTWITS_BASE_URL}/trending/symbols.json"
     try:
         data = _request_json(trending_url)
+        if not data:
+            return items, symbol_meta
         symbols = [s for s in data.get("symbols", []) if s.get("symbol")]
     except requests.RequestException:
         return items, symbol_meta
